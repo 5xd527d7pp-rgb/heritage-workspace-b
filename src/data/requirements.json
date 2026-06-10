@@ -1,0 +1,112 @@
+[
+  {
+    "id": "r1-1-a",
+    "sectionId": "s1-1",
+    "title": "計画策定の目的を明記",
+    "description": "当該市町村における文化財の保存・活用に関するマスタープラン兼アクションプランとしての位置づけを示す。",
+    "sourceDoc": "ハンドブック 第2部",
+    "sourceLocation": "計画の基本的事項",
+    "condition": "目的・背景が地域の実情に即して具体的に述べられていること",
+    "satisfied": true
+  },
+  {
+    "id": "r1-2-a",
+    "sectionId": "s1-2",
+    "title": "上位計画・関連計画との関係を整理",
+    "description": "都道府県の文化財保存活用大綱や総合計画等との関係を明示する。",
+    "sourceDoc": "指針（R7.3改訂）",
+    "sourceLocation": "地域計画の記載事項",
+    "condition": "大綱・関連計画との整合が説明されていること",
+    "satisfied": false
+  },
+  {
+    "id": "r1-2-b",
+    "sectionId": "s1-2",
+    "title": "計画期間を設定",
+    "description": "計画期間（おおむね10年程度）と見直しの考え方を記載する。",
+    "sourceDoc": "ハンドブック 第2部",
+    "sourceLocation": "計画期間",
+    "condition": "期間と見直し時期が明記されていること",
+    "satisfied": false
+  },
+  {
+    "id": "r2-1-a",
+    "sectionId": "s2-1",
+    "title": "地域の特徴を概観",
+    "description": "自然環境、歴史的背景、社会的状況を概観し、文化財の背景を示す。",
+    "sourceDoc": "ハンドブック 第2部",
+    "sourceLocation": "地域の概要",
+    "condition": "地域の特性が文化財と関連づけて記述されていること",
+    "satisfied": false
+  },
+  {
+    "id": "r3-1-a",
+    "sectionId": "s3-1",
+    "title": "未指定を含む文化財の把握状況",
+    "description": "指定・未指定を問わず地域の文化財の把握状況を整理する。",
+    "sourceDoc": "指針（R7.3改訂）",
+    "sourceLocation": "文化財の把握",
+    "condition": "未指定文化財を含めた把握方針が示されていること",
+    "satisfied": false
+  },
+  {
+    "id": "r3-2-a",
+    "sectionId": "s3-2",
+    "title": "保存・活用の課題を抽出",
+    "description": "現状を踏まえ、保存・活用上の課題を具体的に抽出する。",
+    "sourceDoc": "ハンドブック 第2部",
+    "sourceLocation": "現状と課題",
+    "condition": "課題が具体的かつ後段の方針・措置と対応していること",
+    "satisfied": false
+  },
+  {
+    "id": "r4-1-a",
+    "sectionId": "s4-1",
+    "title": "将来ビジョンと基本方針",
+    "description": "目指す将来像と保存・活用の基本方針を示す。",
+    "sourceDoc": "ハンドブック 第2部",
+    "sourceLocation": "基本方針",
+    "condition": "課題に対応した方針になっていること",
+    "satisfied": false
+  },
+  {
+    "id": "r5-1-a",
+    "sectionId": "s5-1",
+    "title": "具体的な措置（事業）の記載",
+    "description": "方針を実現するための具体的な事業・取組とスケジュールを記載する。",
+    "sourceDoc": "指針（R7.3改訂）",
+    "sourceLocation": "必要な措置",
+    "condition": "実施主体・時期が明確なアクションになっていること",
+    "satisfied": false
+  },
+  {
+    "id": "r6-1-a",
+    "sectionId": "s6-1",
+    "title": "関連文化財群の考え方",
+    "description": "設定する場合、群のテーマと構成文化財を示す。",
+    "sourceDoc": "ハンドブック 第3部",
+    "sourceLocation": "関連文化財群",
+    "condition": "群の意義と構成が説明されていること（設定する場合）",
+    "satisfied": false
+  },
+  {
+    "id": "r7-1-a",
+    "sectionId": "s7-1",
+    "title": "推進体制の明示",
+    "description": "庁内体制、協議会、民間・住民との連携体制を示す。",
+    "sourceDoc": "ハンドブック 第2部",
+    "sourceLocation": "推進体制",
+    "condition": "体制図や役割分担が示されていること",
+    "satisfied": false
+  },
+  {
+    "id": "r7-2-a",
+    "sectionId": "s7-2",
+    "title": "進捗管理の方法",
+    "description": "計画の点検・評価と見直しの仕組みを記載する。",
+    "sourceDoc": "指針（R7.3改訂）",
+    "sourceLocation": "進捗管理",
+    "condition": "点検・評価の主体と頻度が示されていること",
+    "satisfied": false
+  }
+]

@@ -1,0 +1,4 @@
+[
+  { "id": "l1", "sectionId": "s1-1", "requirementId": "r1-1-a", "materialId": "m1", "status": "approved", "note": "" },
+  { "id": "l2", "sectionId": "s1-2", "requirementId": "r1-2-a", "materialId": "m3", "status": "approved", "note": "" }
+]

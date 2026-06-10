@@ -1,0 +1,42 @@
+[
+  {
+    "id": "m1",
+    "kind": "document",
+    "title": "○○市総合計画（第6次）",
+    "refType": "PDF",
+    "location": "/docs/sogo-keikaku.pdf",
+    "textExcerpt": "本市は『歴史と自然が息づくまち』を将来像に掲げ、文化財を地域づくりの資源と位置づける。"
+  },
+  {
+    "id": "m2",
+    "kind": "inventory",
+    "title": "指定・未指定文化財一覧（令和6年度）",
+    "refType": "Excel",
+    "location": "/docs/bunkazai-list.xlsx",
+    "textExcerpt": "国指定3件、県指定12件、市指定48件、未指定（把握済）210件。社寺建築・民俗・記念物を含む。"
+  },
+  {
+    "id": "m3",
+    "kind": "document",
+    "title": "○○県文化財保存活用大綱",
+    "refType": "PDF",
+    "location": "/docs/taiko.pdf",
+    "textExcerpt": "県は市町村の地域計画策定を支援し、関連計画との整合を求める。計画期間はおおむね10年を標準とする。"
+  },
+  {
+    "id": "m4",
+    "kind": "image",
+    "title": "旧○○家住宅 外観写真",
+    "refType": "JPEG",
+    "location": "/images/kyu-maruke.jpg",
+    "textExcerpt": "江戸後期の町家建築。市指定有形文化財。保存修理の検討対象。"
+  },
+  {
+    "id": "m5",
+    "kind": "document",
+    "title": "文化財保護審議会 議事録（R6.10）",
+    "refType": "Word",
+    "location": "/docs/shingikai-r610.docx",
+    "textExcerpt": "未指定文化財の悉皆調査の必要性、活用にあたる担い手不足が課題として指摘された。"
+  }
+]

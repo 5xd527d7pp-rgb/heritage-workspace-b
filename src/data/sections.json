@@ -1,0 +1,27 @@
+[
+  { "id": "s1", "parentId": null, "number": "1", "title": "計画策定の基本的な考え方", "body": "", "status": "not_started", "level": 1 },
+  {
+    "id": "s1-1",
+    "parentId": "s1",
+    "number": "1.1",
+    "title": "計画策定の目的と背景",
+    "body": "本計画は、○○市における文化財の保存・活用に関するマスタープラン兼アクションプランとして策定する。少子高齢化と人口減少が進む中、未指定を含む地域の文化財を地域づくりの核として継承するため、把握・保存・活用の方針と具体的措置を体系的に示すことを目的とする。",
+    "status": "drafted",
+    "level": 2
+  },
+  { "id": "s1-2", "parentId": "s1", "number": "1.2", "title": "計画の位置づけ・対象範囲・期間", "body": "", "status": "material_linked", "level": 2 },
+  { "id": "s2", "parentId": null, "number": "2", "title": "地域の概要と歴史文化の特徴", "body": "", "status": "not_started", "level": 1 },
+  { "id": "s2-1", "parentId": "s2", "number": "2.1", "title": "自然・歴史・社会的環境", "body": "", "status": "not_started", "level": 2 },
+  { "id": "s3", "parentId": null, "number": "3", "title": "文化財の現状と課題", "body": "", "status": "not_started", "level": 1 },
+  { "id": "s3-1", "parentId": "s3", "number": "3.1", "title": "文化財の把握状況", "body": "", "status": "not_started", "level": 2 },
+  { "id": "s3-2", "parentId": "s3", "number": "3.2", "title": "保存・活用の現状と課題", "body": "", "status": "not_started", "level": 2 },
+  { "id": "s4", "parentId": null, "number": "4", "title": "文化財の保存・活用に関する方針", "body": "", "status": "not_started", "level": 1 },
+  { "id": "s4-1", "parentId": "s4", "number": "4.1", "title": "基本方針", "body": "", "status": "not_started", "level": 2 },
+  { "id": "s5", "parentId": null, "number": "5", "title": "保存・活用を図るために必要な措置", "body": "", "status": "not_started", "level": 1 },
+  { "id": "s5-1", "parentId": "s5", "number": "5.1", "title": "具体的な取組・事業", "body": "", "status": "not_started", "level": 2 },
+  { "id": "s6", "parentId": null, "number": "6", "title": "関連文化財群・文化財保存活用区域", "body": "", "status": "not_started", "level": 1 },
+  { "id": "s6-1", "parentId": "s6", "number": "6.1", "title": "関連文化財群の設定", "body": "", "status": "not_started", "level": 2 },
+  { "id": "s7", "parentId": null, "number": "7", "title": "推進体制と進捗管理", "body": "", "status": "not_started", "level": 1 },
+  { "id": "s7-1", "parentId": "s7", "number": "7.1", "title": "推進体制", "body": "", "status": "not_started", "level": 2 },
+  { "id": "s7-2", "parentId": "s7", "number": "7.2", "title": "進捗管理・点検評価", "body": "", "status": "not_started", "level": 2 }
+]
