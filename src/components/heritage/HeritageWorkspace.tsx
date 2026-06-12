@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileText, FileCheck2 } from "lucide-react";
 
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/lib/schema";
 import { approvedMaterialIds } from "@/lib/computed/sections";
 import { downloadWord, openReviewPreview } from "@/lib/export/client";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NavAside } from "@/components/heritage/NavAside";
 import { EditorPane } from "@/components/heritage/EditorPane";
@@ -49,6 +50,18 @@ export function HeritageWorkspace({
   const [materials, setMaterials] = useState<Material[]>(initialMaterials);
   const [links, setLinks] = useState<Link[]>(initialLinks);
   const [aiMode, setAiMode] = useState<AiMode | null>(null);
+  const [navCollapsed, setNavCollapsed] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setNavCollapsed((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const firstSectionId =
     initialSections.find((s) => s.level === 2)?.id ??
@@ -228,13 +241,22 @@ export function HeritageWorkspace({
         </Button>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[250px_1fr_340px]">
+      <div
+        className={cn(
+          "grid min-h-0 flex-1",
+          navCollapsed
+            ? "grid-cols-[44px_1fr_340px]"
+            : "grid-cols-[250px_1fr_340px]",
+        )}
+      >
         <NavAside
           sections={sections}
           requirements={requirements}
           links={links}
           activeId={activeId}
           onSelect={setActiveId}
+          collapsed={navCollapsed}
+          onToggleCollapsed={() => setNavCollapsed((prev) => !prev)}
         />
         <EditorPane
           key={active?.id ?? "none"}

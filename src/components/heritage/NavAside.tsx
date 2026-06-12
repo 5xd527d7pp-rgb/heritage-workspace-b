@@ -1,11 +1,14 @@
 "use client";
 
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+
 import { type Link, type Requirement, type Section } from "@/lib/schema";
 import { STATUS_LABELS, PANE_HEADERS } from "@/lib/labels";
 import {
   getRequirementProgress,
   hasEvidence,
 } from "@/lib/computed/sections";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type NavAsideProps = {
@@ -14,6 +17,8 @@ type NavAsideProps = {
   links: Link[];
   activeId: string | null;
   onSelect: (id: string) => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 };
 
 /** ① 章立て・進捗 — Sidebar なしの素朴な左ペイン（道B 自由ルート）。 */
@@ -23,13 +28,46 @@ export function NavAside({
   links,
   activeId,
   onSelect,
+  collapsed,
+  onToggleCollapsed,
 }: NavAsideProps) {
   const chapters = sections.filter((s) => s.level === 1);
 
+  if (collapsed) {
+    return (
+      <aside className="flex min-h-0 flex-col items-center border-r border-border bg-card py-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onToggleCollapsed}
+          aria-label="章立て・進捗を開く"
+          title="章立て・進捗を開く（⌘B）"
+          className="text-primary"
+        >
+          <PanelLeftOpen />
+        </Button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="flex min-h-0 flex-col border-r border-border bg-card">
-      <div className="shrink-0 border-b border-border bg-secondary px-3 py-2 text-xs font-semibold text-primary">
-        {PANE_HEADERS.nav}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-secondary px-3 py-1.5">
+        <span className="text-xs font-semibold text-primary">
+          {PANE_HEADERS.nav}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onToggleCollapsed}
+          aria-label="章立て・進捗を閉じる"
+          title="章立て・進捗を閉じる（⌘B）"
+          className="ml-auto text-primary"
+        >
+          <PanelLeftClose />
+        </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {chapters.map((chapter) => (
