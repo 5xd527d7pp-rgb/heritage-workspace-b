@@ -13,6 +13,7 @@ import {
   type Workspace as WorkspaceMeta,
 } from "@/lib/schema";
 import { approvedMaterialIds } from "@/lib/computed/sections";
+import { downloadWord, openReviewPreview } from "@/lib/export/client";
 import { Button } from "@/components/ui/button";
 import { NavAside } from "@/components/heritage/NavAside";
 import { EditorPane } from "@/components/heritage/EditorPane";
@@ -173,6 +174,17 @@ export function HeritageWorkspace({
     [activeId],
   );
 
+  const exportInput = useMemo(
+    () => ({
+      workspaceName: workspace.name,
+      sections,
+      requirements,
+      materials,
+      links,
+    }),
+    [workspace.name, sections, requirements, materials, links],
+  );
+
   const aiContext: AiContext | null = useMemo(() => {
     if (!active) return null;
     return {
@@ -199,7 +211,7 @@ export function HeritageWorkspace({
         <Button
           variant="outline"
           size="sm"
-          disabled
+          onClick={() => openReviewPreview(exportInput)}
           className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
         >
           <FileText />
@@ -208,7 +220,7 @@ export function HeritageWorkspace({
         <Button
           variant="outline"
           size="sm"
-          disabled
+          onClick={() => downloadWord(exportInput)}
           className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
         >
           <FileCheck2 />
