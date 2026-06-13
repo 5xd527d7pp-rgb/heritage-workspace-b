@@ -6,6 +6,7 @@ import { Sparkles, ListChecks } from "lucide-react";
 import { type Section, type SectionStatus } from "@/lib/schema";
 import { STATUS_LABELS, STATUS_ORDER, PANE_HEADERS } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -19,6 +20,7 @@ type EditorPaneProps = {
   section: Section | null;
   onSaveBody: (body: string) => void;
   onChangeStatus: (status: SectionStatus) => void;
+  onChangePageRef: (pageRef: string) => void;
   onAiDraft: () => void;
   onAiCheck: () => void;
 };
@@ -31,6 +33,7 @@ export function EditorPane({
   section,
   onSaveBody,
   onChangeStatus,
+  onChangePageRef,
   onAiDraft,
   onAiCheck,
 }: EditorPaneProps) {
@@ -50,6 +53,7 @@ export function EditorPane({
       section={section}
       onSaveBody={onSaveBody}
       onChangeStatus={onChangeStatus}
+      onChangePageRef={onChangePageRef}
       onAiDraft={onAiDraft}
       onAiCheck={onAiCheck}
     />
@@ -60,12 +64,14 @@ function EditorBody({
   section,
   onSaveBody,
   onChangeStatus,
+  onChangePageRef,
   onAiDraft,
   onAiCheck,
 }: {
   section: Section;
   onSaveBody: (body: string) => void;
   onChangeStatus: (status: SectionStatus) => void;
+  onChangePageRef: (pageRef: string) => void;
   onAiDraft: () => void;
   onAiCheck: () => void;
 }) {
@@ -104,6 +110,14 @@ function EditorBody({
             ))}
           </SelectContent>
         </Select>
+        <span className="text-xs text-muted-foreground">目次ノンブル</span>
+        <Input
+          value={section.pageRef}
+          placeholder="序-1"
+          onChange={(e) => onChangePageRef(e.target.value)}
+          aria-label="目次のノンブル"
+          className="w-24"
+        />
         <span className="flex-1" />
         <Button variant="secondary" size="sm" onClick={onAiDraft}>
           <Sparkles />

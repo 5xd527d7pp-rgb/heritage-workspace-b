@@ -160,6 +160,16 @@ export function HeritageWorkspace({
     [activeId],
   );
 
+  const changePageRef = useCallback(
+    (pageRef: string) => {
+      if (!activeId) return;
+      setSections((prev) =>
+        prev.map((s) => (s.id === activeId ? { ...s, pageRef } : s)),
+      );
+    },
+    [activeId],
+  );
+
   const toggleRequirement = useCallback(
     (requirementId: string, satisfied: boolean) => {
       setRequirements((prev) =>
@@ -351,6 +361,7 @@ export function HeritageWorkspace({
           section={active}
           onSaveBody={saveBody}
           onChangeStatus={changeStatus}
+          onChangePageRef={changePageRef}
           onAiDraft={() => setAiMode("draft")}
           onAiCheck={() => setAiMode("check")}
         />

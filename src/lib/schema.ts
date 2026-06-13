@@ -35,6 +35,9 @@ export const sectionSchema = z.object({
   body: z.string(),
   status: sectionStatusSchema,
   level: z.number(),
+  // 目次のノンブル（例「序-1」「1-1」）。Word互換HTMLでは実ページを自動算出できない
+  // ため手入力。空なら目次で点線のみ表示。古いデータに無くても default で補完。
+  pageRef: z.string().default(""),
 });
 export type Section = z.infer<typeof sectionSchema>;
 

@@ -272,6 +272,42 @@ function formatHeadingLabel(level: number, number: string, title: string): strin
   return `（${tail}）${title}`;
 }
 
+/**
+ * 目次用の見出し表記。章=「第1章 …」/ 節=「第1節 …」/ 項=「（1）…」。
+ * （本文見出しは節を「1」と出すが、目次は読みやすさ優先で「第1節」と綴る。）
+ */
+function formatTocLabel(level: number, number: string, title: string): string {
+  const tail = number.includes(".") ? number.slice(number.lastIndexOf(".") + 1) : number;
+  if (level <= 1) return `第${number}章　${title}`;
+  if (level === 2) return `第${tail}節　${title}`;
+  return `（${tail}）${title}`;
+}
+
+/**
+ * 目次ページ（表紙の次・第1章の前）。章はノンブルなし・節は右ぞろえドットリーダー＋
+ * 手入力ノンブル（pageRef）・項はインデントのみ。ノンブルは空なら点線だけ伸びる。
+ */
+function renderToc(workspaceName: string, status: string, sections: Section[]): string {
+  const heading = `目　次${status}`;
+  const rows = sections
+    .map((s) => {
+      const label = formatTocLabel(s.level, s.number, s.title);
+      if (s.level <= 1) {
+        return `<p class="TocChapter">${escapeHtml(label)}</p>`;
+      }
+      if (s.level === 2) {
+        const ref = (s.pageRef ?? "").trim();
+        return `<p class="TocSection">${escapeHtml(label)}<span style="mso-tab-count:1"></span>${escapeHtml(ref)}</p>`;
+      }
+      return `<p class="TocItem">${escapeHtml(label)}</p>`;
+    })
+    .join("\n");
+
+  return `<p class="TocPlanName">${escapeHtml(workspaceName)}</p>
+<p class="TocTitle">${escapeHtml(heading)}</p>
+${rows}`;
+}
+
 export function renderWordHtml(input: ExportInput): string {
   const { workspaceName, sections } = input;
 
@@ -293,6 +329,10 @@ export function renderWordHtml(input: ExportInput): string {
   ]
     .filter(Boolean)
     .join("\n");
+
+  // 目次は表紙の次ページ（TocPlanName に page-break-before）。本文の第1章も改ページ
+  // するので、表紙→目次→第1章の順に各ページ先頭から始まる。
+  const toc = renderToc(workspaceName, coverStatus, sections);
 
   // 章見出しは常に改ページする（ChapterHeading に page-break-before:always）。
   // 第1章も同じで、表紙の次ページ先頭から始まる。
@@ -318,6 +358,7 @@ export function renderWordHtml(input: ExportInput): string {
 <body lang="JA">
 <div class="WordSection1">
 ${cover}
+${toc}
 ${body}
 <div style="mso-element:footer" id="ff1">
 <p class="MsoFooter">&nbsp;</p>
@@ -451,6 +492,54 @@ const WORD_STYLES = `
     text-align: center;
     color: #000;
     margin: 10pt 0 0 0;
+    line-height: normal;
+  }
+  p.TocPlanName {
+    font-family: ${FONT.gothic.family};
+    mso-fareast-font-family: ${FONT.gothic.fareast};
+    font-size: 14pt;
+    text-align: center;
+    color: #1a1a1a;
+    margin: 0 0 6pt 0;
+    line-height: normal;
+    page-break-before: always;
+    mso-break-type: page-break;
+  }
+  p.TocTitle {
+    font-family: ${FONT.gothic.family};
+    mso-fareast-font-family: ${FONT.gothic.fareast};
+    font-size: 18pt;
+    font-weight: bold;
+    letter-spacing: 0.3em;
+    text-align: center;
+    color: #1a1a1a;
+    margin: 0 0 18pt 0;
+    line-height: normal;
+  }
+  p.TocChapter {
+    font-family: ${FONT.gothic.family};
+    mso-fareast-font-family: ${FONT.gothic.fareast};
+    font-size: 12pt;
+    font-weight: bold;
+    color: #1a1a1a;
+    margin: 10pt 0 4pt 0;
+    line-height: normal;
+  }
+  p.TocSection {
+    font-family: ${FONT.mincho.family};
+    mso-fareast-font-family: ${FONT.mincho.fareast};
+    font-size: 11pt;
+    color: #000;
+    margin: 2pt 0 2pt 1em;
+    line-height: normal;
+    mso-tab-stops: right dotted 155.0mm;
+  }
+  p.TocItem {
+    font-family: ${FONT.mincho.family};
+    mso-fareast-font-family: ${FONT.mincho.fareast};
+    font-size: 10.5pt;
+    color: #000;
+    margin: 1pt 0 1pt 2em;
     line-height: normal;
   }
   p.MsoFooter {
