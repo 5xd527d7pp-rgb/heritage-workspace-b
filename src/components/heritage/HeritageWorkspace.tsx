@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, FileCheck2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FileText, FileCheck2, RotateCcw } from "lucide-react";
 
 import {
   type AiContext,
@@ -14,6 +14,11 @@ import {
 } from "@/lib/schema";
 import { approvedMaterialIds } from "@/lib/computed/sections";
 import { downloadWord, openReviewPreview } from "@/lib/export/client";
+import {
+  clearPersisted,
+  loadPersisted,
+  savePersisted,
+} from "@/lib/persistence/storage";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NavAside } from "@/components/heritage/NavAside";
@@ -51,6 +56,8 @@ export function HeritageWorkspace({
   const [links, setLinks] = useState<Link[]>(initialLinks);
   const [aiMode, setAiMode] = useState<AiMode | null>(null);
   const [navCollapsed, setNavCollapsed] = useState(false);
+  // 直後の保存をスキップするフラグ（ハイドレーション/リセット直後の上書き防止）。
+  const skipNextSave = useRef(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -62,6 +69,39 @@ export function HeritageWorkspace({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  // マウント後に保存済みデータを復元する。初回レンダーは props（＝SSR と同じ）で描画し、
+  // その後 localStorage という外部ストアの内容へ一度だけ同期する。
+  // （editable な state なので useSyncExternalStore ではなくマウント時 setState で復元する）
+  useEffect(() => {
+    const saved = loadPersisted();
+    if (!saved) return;
+    skipNextSave.current = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- localStorage からの初回ハイドレーション（外部ストア同期） */
+    setSections(saved.sections);
+    setRequirements(saved.requirements);
+    setMaterials(saved.materials);
+    setLinks(saved.links);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  // 編集状態を localStorage に保存する（外部システムへの同期）。
+  useEffect(() => {
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+    savePersisted({ sections, requirements, materials, links });
+  }, [sections, requirements, materials, links]);
+
+  const resetToInitial = useCallback(() => {
+    clearPersisted();
+    skipNextSave.current = true;
+    setSections(initialSections);
+    setRequirements(initialRequirements);
+    setMaterials(initialMaterials);
+    setLinks(initialLinks);
+  }, [initialSections, initialRequirements, initialMaterials, initialLinks]);
 
   const firstSectionId =
     initialSections.find((s) => s.level === 2)?.id ??
@@ -238,6 +278,25 @@ export function HeritageWorkspace({
         >
           <FileCheck2 />
           提出用Word
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (
+              window.confirm(
+                "保存した編集内容を消して初期データに戻します。よろしいですか？",
+              )
+            ) {
+              resetToInitial();
+            }
+          }}
+          aria-label="初期データに戻す"
+          title="保存した編集内容を消して初期データに戻す"
+          className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
+        >
+          <RotateCcw />
+          初期化
         </Button>
       </header>
 
