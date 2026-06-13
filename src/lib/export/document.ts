@@ -178,8 +178,8 @@ const REVIEW_STYLES = `
 //
 // 体裁は「本文レイアウト設定」(熊本県菊陽町 報告書レイアウト案) に準拠する:
 //   - A4縦 / 余白 上25・下27・左右25mm / ヘッダー18mm・フッター15mm
-//   - フォント: WORD_FONT_TARGET（"mac" / "windows"）で明朝・ゴシックの基準を切替。
-//     mac=ヒラギノ優先 / windows=MS明朝・MSゴシック優先（FONT_PRESETS 参照）
+//   - フォント: 既定は MS明朝 / MSゴシック（レイアウトPDF準拠・Word標準）。WORD_FONT_TARGET
+//     で基準を切替（"windows"=MS系優先 / "mac"=ヒラギノ優先。FONT_PRESETS 参照）
 //   - 本文: 明朝 11pt・両端揃え・字下げ1字・行間 固定18pt
 //   - 見出し番号: 章=「第1章」/ 節=「1」/ 項=「（1）」（レイアウト例の体系）
 //   - 見出し1(章): 18pt MSゴシックBold 中央・緑網掛け（#6FA976 ベタ塗り・白抜き文字）
@@ -205,12 +205,14 @@ const COVER_PUBLISHER = "○○市";
 const COVER_DATE = "令和○年（202○）○月";
 
 // 提出用Word の日本語フォント基準。ここを切り替えるだけで全フォント指定が変わる。
-//   "mac":     ヒラギノ優先。Mac の Word / プレビューで明朝・ゴシックが正しく出る。
-//   "windows": MS明朝 / MSゴシック優先。Windows 配布・印刷入稿向け（レイアウト設定 PDF 準拠）。
+//   "windows"（既定）: MS明朝 / MSゴシック優先。レイアウト設定 PDF 準拠で、表紙(MS P明朝)
+//                      とも書体が揃う。Mac 版 Word も Office 同梱の MS フォントを持つので
+//                      Mac/Windows どちらで開いても同じ書体になる（＝既定はこちら）。
+//   "mac":             ヒラギノ優先。Word を使わず Mac のプレビュー等で開く場合向け。
 // mso-fareast-font-family は Word が日本語字形に使うフォントなので、開く環境に
 // 実在するフォントを先頭に置くのが肝心（無いとゴシック等で代替表示される）。
 type WordFontTarget = "mac" | "windows";
-const WORD_FONT_TARGET: WordFontTarget = "mac";
+const WORD_FONT_TARGET: WordFontTarget = "windows";
 
 // フォント名は Word が認識する「英語名」で指定する。半角MS＋漢字の "MS 明朝" 等は
 // 登録名と一致せずゴシックで代替されるため使わない（MS明朝→"MS Mincho"、MS P明朝→
