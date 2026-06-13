@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Circle, CircleCheck, Plus } from "lucide-react";
+import { Circle, CircleCheck, PanelRightClose, Plus } from "lucide-react";
 
 import { type Requirement, type Section } from "@/lib/schema";
 import { PANE_HEADERS } from "@/lib/labels";
@@ -17,6 +17,7 @@ type RequirementsPaneProps = {
   requirements: Requirement[];
   onToggleSatisfied: (requirementId: string, satisfied: boolean) => void;
   onAddRequirement: (title: string) => void;
+  onToggleCollapsed: () => void;
 };
 
 export function RequirementsPane({
@@ -24,6 +25,7 @@ export function RequirementsPane({
   requirements,
   onToggleSatisfied,
   onAddRequirement,
+  onToggleCollapsed,
 }: RequirementsPaneProps) {
   const [adding, setAdding] = useState(false);
 
@@ -33,8 +35,8 @@ export function RequirementsPane({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col border-b border-border bg-background">
-      <header className="flex h-10 shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3">
-        <h2 className="truncate text-xs font-semibold text-foreground">
+      <header className="flex h-10 shrink-0 items-center gap-2 border-b border-border bg-muted/40 px-3">
+        <h2 className="flex-1 truncate text-xs font-semibold text-foreground">
           {PANE_HEADERS.requirements}
         </h2>
         {section && (
@@ -48,6 +50,16 @@ export function RequirementsPane({
             <Plus />
           </Button>
         )}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={onToggleCollapsed}
+          aria-label="要件・素材パネルを閉じる"
+          title="要件・素材パネルを閉じる（⌘J）"
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <PanelRightClose />
+        </Button>
       </header>
 
       <ScrollArea className="min-h-0 flex-1">

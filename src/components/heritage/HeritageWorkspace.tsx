@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, FileCheck2, RotateCcw } from "lucide-react";
+import { FileText, FileCheck2, PanelRightOpen, RotateCcw } from "lucide-react";
 
 import {
   type AiContext,
@@ -19,7 +19,6 @@ import {
   loadPersisted,
   savePersisted,
 } from "@/lib/persistence/storage";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NavAside } from "@/components/heritage/NavAside";
 import { EditorPane } from "@/components/heritage/EditorPane";
@@ -56,14 +55,20 @@ export function HeritageWorkspace({
   const [links, setLinks] = useState<Link[]>(initialLinks);
   const [aiMode, setAiMode] = useState<AiMode | null>(null);
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
   // 直後の保存をスキップするフラグ（ハイドレーション/リセット直後の上書き防止）。
   const skipNextSave = useRef(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "b") {
         e.preventDefault();
         setNavCollapsed((prev) => !prev);
+      } else if (key === "j") {
+        e.preventDefault();
+        setRightCollapsed((prev) => !prev);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -301,12 +306,12 @@ export function HeritageWorkspace({
       </header>
 
       <div
-        className={cn(
-          "grid min-h-0 flex-1",
-          navCollapsed
-            ? "grid-cols-[44px_1fr_340px]"
-            : "grid-cols-[250px_1fr_340px]",
-        )}
+        className="grid min-h-0 flex-1"
+        style={{
+          gridTemplateColumns: `${navCollapsed ? "44px" : "250px"} 1fr ${
+            rightCollapsed ? "44px" : "340px"
+          }`,
+        }}
       >
         <NavAside
           sections={sections}
@@ -325,22 +330,39 @@ export function HeritageWorkspace({
           onAiDraft={() => setAiMode("draft")}
           onAiCheck={() => setAiMode("check")}
         />
-        <div className="flex min-h-0 flex-col border-l border-border">
-          <RequirementsPane
-            section={active}
-            requirements={requirements}
-            onToggleSatisfied={toggleRequirement}
-            onAddRequirement={addRequirement}
-          />
-          <MaterialsPane
-            section={active}
-            materials={materials}
-            approvedMaterialIds={approvedIds}
-            onLinkMaterial={(materialId) => linkMaterial(materialId)}
-            onAddMaterial={addMaterial}
-            onAiSuggest={() => setAiMode("suggest")}
-          />
-        </div>
+        {rightCollapsed ? (
+          <aside className="flex min-h-0 flex-col items-center border-l border-border bg-card py-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setRightCollapsed(false)}
+              aria-label="要件・素材パネルを開く"
+              title="要件・素材パネルを開く（⌘J）"
+              className="text-primary"
+            >
+              <PanelRightOpen />
+            </Button>
+          </aside>
+        ) : (
+          <div className="flex min-h-0 flex-col border-l border-border">
+            <RequirementsPane
+              section={active}
+              requirements={requirements}
+              onToggleSatisfied={toggleRequirement}
+              onAddRequirement={addRequirement}
+              onToggleCollapsed={() => setRightCollapsed(true)}
+            />
+            <MaterialsPane
+              section={active}
+              materials={materials}
+              approvedMaterialIds={approvedIds}
+              onLinkMaterial={(materialId) => linkMaterial(materialId)}
+              onAddMaterial={addMaterial}
+              onAiSuggest={() => setAiMode("suggest")}
+            />
+          </div>
+        )}
       </div>
 
       <AiActionDialog
