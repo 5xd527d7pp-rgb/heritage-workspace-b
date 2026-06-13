@@ -101,6 +101,11 @@ export const linksSchema = z.array(linkSchema);
 export const workspaceSchema = z.object({
   name: z.string(),
   icon: z.string(),
+  // 表紙メタ。古い保存データ・JSON に無くても default で補完する（後方互換）。
+  // status=「（案）」/ date=策定年月 / publisher=発行者。空文字なら表紙で非表示。
+  status: z.string().default("（案）"),
+  date: z.string().default("令和○年（202○）○月"),
+  publisher: z.string().default("○○市"),
 });
 export type Workspace = z.infer<typeof workspaceSchema>;
 

@@ -53,6 +53,7 @@ export function HeritageWorkspace({
     useState<Requirement[]>(initialRequirements);
   const [materials, setMaterials] = useState<Material[]>(initialMaterials);
   const [links, setLinks] = useState<Link[]>(initialLinks);
+  const [workspaceMeta, setWorkspaceMeta] = useState<WorkspaceMeta>(workspace);
   const [aiMode, setAiMode] = useState<AiMode | null>(null);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
@@ -87,6 +88,7 @@ export function HeritageWorkspace({
     setRequirements(saved.requirements);
     setMaterials(saved.materials);
     setLinks(saved.links);
+    if (saved.workspace) setWorkspaceMeta(saved.workspace);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
@@ -96,8 +98,14 @@ export function HeritageWorkspace({
       skipNextSave.current = false;
       return;
     }
-    savePersisted({ sections, requirements, materials, links });
-  }, [sections, requirements, materials, links]);
+    savePersisted({
+      sections,
+      requirements,
+      materials,
+      links,
+      workspace: workspaceMeta,
+    });
+  }, [sections, requirements, materials, links, workspaceMeta]);
 
   const resetToInitial = useCallback(() => {
     clearPersisted();
@@ -106,7 +114,18 @@ export function HeritageWorkspace({
     setRequirements(initialRequirements);
     setMaterials(initialMaterials);
     setLinks(initialLinks);
-  }, [initialSections, initialRequirements, initialMaterials, initialLinks]);
+    setWorkspaceMeta(workspace);
+  }, [
+    initialSections,
+    initialRequirements,
+    initialMaterials,
+    initialLinks,
+    workspace,
+  ]);
+
+  const updateWorkspaceMeta = useCallback((patch: Partial<WorkspaceMeta>) => {
+    setWorkspaceMeta((prev) => ({ ...prev, ...patch }));
+  }, []);
 
   const firstSectionId =
     initialSections.find((s) => s.level === 2)?.id ??
@@ -234,13 +253,16 @@ export function HeritageWorkspace({
 
   const exportInput = useMemo(
     () => ({
-      workspaceName: workspace.name,
+      workspaceName: workspaceMeta.name,
       sections,
       requirements,
       materials,
       links,
+      coverStatus: workspaceMeta.status,
+      coverDate: workspaceMeta.date,
+      coverPublisher: workspaceMeta.publisher,
     }),
-    [workspace.name, sections, requirements, materials, links],
+    [workspaceMeta, sections, requirements, materials, links],
   );
 
   const aiContext: AiContext | null = useMemo(() => {
@@ -259,7 +281,7 @@ export function HeritageWorkspace({
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
       <header className="flex shrink-0 items-center gap-3 bg-primary px-4 py-2 text-primary-foreground">
-        <h1 className="text-sm font-semibold">{workspace.name}</h1>
+        <h1 className="text-sm font-semibold">{workspaceMeta.name}</h1>
         <span className="flex-1" />
         {active && (
           <span className="truncate text-xs opacity-90">
@@ -321,6 +343,8 @@ export function HeritageWorkspace({
           onSelect={setActiveId}
           collapsed={navCollapsed}
           onToggleCollapsed={() => setNavCollapsed((prev) => !prev)}
+          workspace={workspaceMeta}
+          onWorkspaceChange={updateWorkspaceMeta}
         />
         <EditorPane
           key={active?.id ?? "none"}

@@ -15,10 +15,12 @@ import {
   materialsSchema,
   requirementsSchema,
   sectionsSchema,
+  workspaceSchema,
   type Link,
   type Material,
   type Requirement,
   type Section,
+  type Workspace,
 } from "@/lib/schema";
 import { z } from "zod";
 
@@ -29,6 +31,8 @@ const persistedSchema = z.object({
   requirements: requirementsSchema,
   materials: materialsSchema,
   links: linksSchema,
+  // 表紙メタ。v1 初期の保存データには無いので optional（無ければ初期値を使う）。
+  workspace: workspaceSchema.optional(),
 });
 
 export type PersistedState = z.infer<typeof persistedSchema>;
@@ -52,6 +56,7 @@ export function savePersisted(state: {
   requirements: Requirement[];
   materials: Material[];
   links: Link[];
+  workspace: Workspace;
 }): void {
   if (typeof window === "undefined") return;
   try {

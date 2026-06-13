@@ -19,6 +19,10 @@ export type ExportInput = {
   requirements: Requirement[];
   materials: Material[];
   links: Link[];
+  // 表紙メタ（提出用Wordの表紙でのみ使用）。未指定なら既定値で出力する。
+  coverStatus?: string;
+  coverDate?: string;
+  coverPublisher?: string;
 };
 
 function escapeHtml(value: string): string {
@@ -197,12 +201,11 @@ const REVIEW_STYLES = `
 
 const WORD_GREEN = "#6FA976";
 
-// 表紙の固定表記。雛形データ（workspace.json）には無いため定数で持つ。
-// 計画名・発行自治体・策定年月を変えるときはここを編集する。
-// 年月は自動計算せず、○ を実際の数字に置き換えて使うプレースホルダーにしている。
-const COVER_STATUS = "（案）";
-const COVER_PUBLISHER = "○○市";
-const COVER_DATE = "令和○年（202○）○月";
+// 表紙の既定表記。UI（左ペインの「表紙」欄）から ExportInput 経由で上書きされる。
+// UI 未指定時のフォールバックとしてここを使う（年月は ○ を数字に置き換える前提）。
+const COVER_STATUS_DEFAULT = "（案）";
+const COVER_PUBLISHER_DEFAULT = "○○市";
+const COVER_DATE_DEFAULT = "令和○年（202○）○月";
 
 // 提出用Word の日本語フォント基準。ここを切り替えるだけで全フォント指定が変わる。
 //   "windows"（既定）: MS明朝 / MSゴシック優先。レイアウト設定 PDF 準拠で、表紙(MS P明朝)
@@ -272,15 +275,24 @@ function formatHeadingLabel(level: number, number: string, title: string): strin
 export function renderWordHtml(input: ExportInput): string {
   const { workspaceName, sections } = input;
 
+  // 表紙メタは UI（ExportInput）優先、未指定なら既定値。空文字の項目は段落ごと省く。
+  const coverStatus = (input.coverStatus ?? COVER_STATUS_DEFAULT).trim();
+  const coverDate = (input.coverDate ?? COVER_DATE_DEFAULT).trim();
+  const coverPublisher = (input.coverPublisher ?? COVER_PUBLISHER_DEFAULT).trim();
+
   // 表紙は本文と同じセクション内の先頭に置く。表紙が単独ページになるのは、表紙の
   // 内容が1ページに収まる高さで、かつ直後の第1章に必ず改ページ（page-break-before）
   // が入るため。@page のセクション区切りに依存しないので、ビューアを問わず確実。
-  const cover = `<p class="CoverSpacerTop">&nbsp;</p>
-<p class="CoverTitle">${escapeHtml(workspaceName)}</p>
-<p class="CoverStatus">${escapeHtml(COVER_STATUS)}</p>
-<p class="CoverSpacerMid">&nbsp;</p>
-<p class="CoverDate">${escapeHtml(COVER_DATE)}</p>
-<p class="CoverPublisher">${escapeHtml(COVER_PUBLISHER)}</p>`;
+  const cover = [
+    `<p class="CoverSpacerTop">&nbsp;</p>`,
+    `<p class="CoverTitle">${escapeHtml(workspaceName)}</p>`,
+    coverStatus ? `<p class="CoverStatus">${escapeHtml(coverStatus)}</p>` : "",
+    `<p class="CoverSpacerMid">&nbsp;</p>`,
+    coverDate ? `<p class="CoverDate">${escapeHtml(coverDate)}</p>` : "",
+    coverPublisher ? `<p class="CoverPublisher">${escapeHtml(coverPublisher)}</p>` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   // 章見出しは常に改ページする（ChapterHeading に page-break-before:always）。
   // 第1章も同じで、表紙の次ページ先頭から始まる。
