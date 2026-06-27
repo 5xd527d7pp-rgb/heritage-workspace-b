@@ -1,142 +1,67 @@
 # 引継ぎメモ
 
-文化財保存活用地域計画の執筆支援ツール（**道B**）の引継ぎ用メモです。詳細は [README.md](./README.md) を参照。
+文化財保存活用地域計画の執筆支援ツール（**道B**）。詳細は [README.md](./README.md)。
 
 ---
 
-## これは何か
+## 現状（2026-06）
 
-- **目的**: 地域計画の本文執筆を支援する Web アプリ（プロトタイプ）
-- **位置づけ**: 道A（workspace-ui-kit 改造）と比較するための **新規 Next.js 版**
-- **比較対象**: [workspace-ui-kit-heritage-a](https://github.com/5xd527d7pp-rgb/workspace-ui-kit-heritage-a)
+| 項目 | 状態 |
+|---|---|
+| 4ペイン UI・編集・エクスポート | ✅ 実装済み |
+| 永続化 | localStorage（`heritage-workspace-b:v1`） |
+| AI | `/api/ai` → Claude（キー未設定時はスタブ） |
+| 本番公開 | ✅ Vercel（GitHub `main` 連携） |
+| DB | ❌ 未着手（第7回課題） |
+
+---
+
+## 本番 URL（発表用）
+
+| 用途 | URL |
+|---|---|
+| **アプリ（共有・発表）** | https://heritage-workspace-b-2mzn.vercel.app |
+| 管理画面（Vercel） | https://vercel.com/atsunori-hasegawas-projects/heritage-workspace-b-2mzn |
+
+一言: 文化財保存活用地域計画の執筆支援（4ペイン・localStorage 永続化・AI 下書き）
 
 ---
 
 ## 起動
 
 ```bash
-npm install
-npm run dev
-# → http://localhost:3000
+npm install && npm run dev   # → http://localhost:3000
 ```
 
----
-
-## 技術スタック
-
-| 項目 | 内容 |
-|---|---|
-| フレームワーク | Next.js 16（App Router） |
-| UI | shadcn/ui（Base UI + Tailwind CSS v4） |
-| 型・バリデーション | Zod |
-| 状態管理 | React useState（外部ライブラリなし） |
-| 永続化 | localStorage（`heritage-workspace-b:v1`） |
-| AI | ローカルスタブ（実 API 未接続） |
+AI をローカルで使う: `.env.local.example` をコピーして `ANTHROPIC_API_KEY` を設定。
 
 ---
 
-## 画面構成（4ペイン）
-
-```
-┌──────────┬─────────────────┬──────────────┐
-│ 章立て   │                 │ 記載要件     │
-│ 進捗     │   本文エディタ   │ チェック     │
-│          │                 ├──────────────┤
-│ (左)     │    (中央)       │ 素材データ   │
-│          │                 │  (右下)      │
-└──────────┴─────────────────┴──────────────┘
-```
-
-- 左ペイン折りたたみ: `Cmd+B` / `Ctrl+B`
-- 右ペイン折りたたみ: `Cmd+J` / `Ctrl+J`
-
----
-
-## データの流れ
-
-1. **初期データ**: `src/data/*.json`（sections / requirements / materials / links / workspace）
-2. **型の正本**: `src/lib/schema.ts`（Zod スキーマ）
-3. **実行時**: `HeritageWorkspace` が state を保持
-4. **保存**: 編集内容は localStorage に自動保存（リロード後も復元）
-5. **リセット**: 画面内の「初期データに戻す」ボタン
-
----
-
-## 触る場所（優先度順）
+## 触る場所
 
 | やりたいこと | ファイル |
 |---|---|
-| UI 全体・レイアウト | `src/components/heritage/HeritageWorkspace.tsx` |
-| 各ペイン | `src/components/heritage/{NavAside,EditorPane,RequirementsPane,MaterialsPane}.tsx` |
-| ドメイン型・データ構造 | `src/lib/schema.ts` |
+| UI・レイアウト | `src/components/heritage/HeritageWorkspace.tsx` |
+| 各ペイン | `src/components/heritage/*Pane.tsx` |
+| 型・データ構造 | `src/lib/schema.ts` |
 | 初期データ | `src/data/*.json` |
-| AI 機能（スタブ） | `src/lib/ai/heritage.ts` |
-| エクスポート（HTML / Word） | `src/lib/export/` |
+| AI（スタブ） | `src/lib/ai/heritage.ts` |
+| AI（API） | `src/app/api/ai/route.ts` |
 | 永続化 | `src/lib/persistence/storage.ts` |
-
----
-
-## 実装済み / 未実装
-
-### 実装済み
-- 節ごとの本文編集・進捗ステータス
-- 記載要件の達成チェック
-- 素材の追加・節への根拠紐付け
-- 表紙メタ編集（案・年月・発行者）
-- 目次ページの自動生成
-- レビュー版 HTML 出力
-- 提出用 Word 出力（`.doc`）
-- localStorage 永続化
-- **AI 実 API 接続**（`src/app/api/ai/route.ts`）
-  - Anthropic Claude 呼び出し（下書き / 要件チェック / 素材紐付け候補）
-  - `ANTHROPIC_API_KEY` 未設定時はスタブで代替（フォールバック）
-  - ダイアログに非同期ローディング表示を追加
-
-### 未着手
-- localStorage → DB（Neon / Postgres）移行（第7回月次課題）
-- 素材データのインポート機能
-- Vercel デプロイ（`npm run build` は通過済み）
-- ユーザー認証
-
----
-
-## 直近の変更（2026-06 時点）
-
-- 右ペイン折りたたみ対応
-- 提出用 Word のレイアウト・フォント統一
-- 表紙フィールドの編集機能
-- 目次ページの自動生成
-- **AI 実 API 接続**（`src/app/api/ai/route.ts` 新規・`AiActionDialog.tsx` 非同期化）
-- `.env.local.example` 追加
+| HTML / Word 出力 | `src/lib/export/` |
 
 ---
 
 ## 次にやるなら
 
-1. **Vercel デプロイ**（第6回の課題）
-   - `npm run build` は通過済み
-   - GitHub push → Vercel ダッシュボードから Import → Deploy
-   - `ANTHROPIC_API_KEY` を Vercel 環境変数に設定する
-2. **localStorage → DB（Neon / Postgres）移行**（第7回の月次課題）
-   - Vercel ダッシュボード > Storage > Neon を追加
-   - `DATABASE_URL` 環境変数を `.env.local` に追加
-   - `src/lib/persistence/storage.ts` の責務を DB API ルートに置き換え
-3. **素材データのインポート機能**（CSV / JSON アップロード）
-4. **提出先に合わせた Word / HTML 書式調整**
+1. **Neon DB 移行** — Vercel Storage → Neon、`DATABASE_URL` 設定、`storage.ts` を API 化
+2. **`ANTHROPIC_API_KEY`** — Vercel 環境変数に追加 → Redeploy
+3. 素材インポート、Word/HTML 書式調整
 
 ---
 
-## 注意点
+## 注意
 
-- **道B は自由度が高い** → 規律（命名・コンポーネント分割）は自分で決める必要あり
-- **データの正本は `schema.ts`** → JSON や UI を変えるときはここから
-- **AI は実 API 接続済み** → `ANTHROPIC_API_KEY` を `.env.local` に設定してから起動する
-  - 未設定時はスタブ（`src/lib/ai/heritage.ts`）で代替動作する
-- 未コミット: `output/heritage-data-architecture.html`（図解アウトプット）
-
----
-
-## 連絡・参照
-
-- 設計の正本: heritage-plan-tool / designing-heritage-ui スキル
-- 詳細ドキュメント: [README.md](./README.md)
+- 型の正本は `schema.ts`。JSON・UI を変えるときはここから。
+- 更新は `git push` → Vercel が自動デプロイ。
+- 比較対象（道A）: [workspace-ui-kit-heritage-a](https://github.com/5xd527d7pp-rgb/workspace-ui-kit-heritage-a)
