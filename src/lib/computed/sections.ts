@@ -3,7 +3,12 @@
  * candidates 配列（旧採用管理）の派生計算を heritage 仕様に置き換えたもの。
  */
 
-import { type Link, type Requirement } from "@/lib/schema";
+import { type Link, type Requirement, type Section } from "@/lib/schema";
+
+/** 編集対象として選ぶ節 ID。level 2 を優先（章見出しは NavAside では非選択）。 */
+export function defaultActiveSectionId(sections: Section[]): string | null {
+  return sections.find((s) => s.level === 2)?.id ?? sections[0]?.id ?? null;
+}
 
 /** 節の要件達成数（done / total）を派生計算する。 */
 export function getRequirementProgress(

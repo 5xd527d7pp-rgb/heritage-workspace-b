@@ -12,12 +12,20 @@ import {
   type SectionStatus,
   type Workspace as WorkspaceMeta,
 } from "@/lib/schema";
-import { approvedMaterialIds } from "@/lib/computed/sections";
+import {
+  approvedMaterialIds,
+  defaultActiveSectionId,
+} from "@/lib/computed/sections";
 import { downloadWord, openReviewPreview } from "@/lib/export/client";
 import {
   clearPersisted,
+  clearRemotePersisted,
+  flushRemotePersisted,
   loadPersisted,
+  loadRemotePersisted,
   savePersisted,
+  saveRemotePersisted,
+  type PersistedPayload,
 } from "@/lib/persistence/storage";
 import { Button } from "@/components/ui/button";
 import { NavAside } from "@/components/heritage/NavAside";
@@ -59,6 +67,12 @@ export function HeritageWorkspace({
   const [rightCollapsed, setRightCollapsed] = useState(false);
   // 直後の保存をスキップするフラグ（ハイドレーション/リセット直後の上書き防止）。
   const skipNextSave = useRef(false);
+  const [remoteEnabled, setRemoteEnabled] = useState(false);
+  const remoteSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestPayloadRef = useRef<PersistedPayload | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(() =>
+    defaultActiveSectionId(initialSections),
+  );
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -76,62 +90,133 @@ export function HeritageWorkspace({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // マウント後に保存済みデータを復元する。初回レンダーは props（＝SSR と同じ）で描画し、
-  // その後 localStorage という外部ストアの内容へ一度だけ同期する。
-  // （editable な state なので useSyncExternalStore ではなくマウント時 setState で復元する）
-  useEffect(() => {
-    const saved = loadPersisted();
-    if (!saved) return;
-    skipNextSave.current = true;
-    /* eslint-disable react-hooks/set-state-in-effect -- localStorage からの初回ハイドレーション（外部ストア同期） */
-    setSections(saved.sections);
-    setRequirements(saved.requirements);
-    setMaterials(saved.materials);
-    setLinks(saved.links);
-    if (saved.workspace) setWorkspaceMeta(saved.workspace);
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, []);
+  const applyPersisted = useCallback(
+    (saved: {
+      sections: Section[];
+      requirements: Requirement[];
+      materials: Material[];
+      links: Link[];
+      workspace?: WorkspaceMeta;
+    }) => {
+      skipNextSave.current = true;
+      setSections(saved.sections);
+      setRequirements(saved.requirements);
+      setMaterials(saved.materials);
+      setLinks(saved.links);
+      if (saved.workspace) setWorkspaceMeta(saved.workspace);
+      setActiveId((prev) =>
+        prev && saved.sections.some((s) => s.id === prev)
+          ? prev
+          : defaultActiveSectionId(saved.sections),
+      );
+    },
+    [],
+  );
 
-  // 編集状態を localStorage に保存する（外部システムへの同期）。
+  // マウント後に DB → localStorage の順で復元。初回レンダーは props（SSR と同じ）。
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const remote = await loadRemotePersisted();
+      if (cancelled) return;
+
+      setRemoteEnabled(remote.enabled);
+
+      const local = loadPersisted();
+      const saved = remote.state ?? local;
+      if (!saved) return;
+
+      applyPersisted(saved);
+
+      // DB は空だが local にだけデータがある → 次の保存で DB に同期
+      if (remote.enabled && !remote.state && local) {
+        skipNextSave.current = false;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applyPersisted]);
+
+  // 編集状態を localStorage +（任意）Neon API に保存する。
   useEffect(() => {
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
     }
-    savePersisted({
+
+    const payload: PersistedPayload = {
       sections,
       requirements,
       materials,
       links,
       workspace: workspaceMeta,
-    });
-  }, [sections, requirements, materials, links, workspaceMeta]);
+    };
+    latestPayloadRef.current = payload;
+
+    savePersisted(payload);
+
+    if (!remoteEnabled) return;
+
+    if (remoteSaveTimer.current) clearTimeout(remoteSaveTimer.current);
+    // 本文エディタ側で 700ms デバounce済みのため、DB 同期は短めにする。
+    remoteSaveTimer.current = setTimeout(() => {
+      void saveRemotePersisted(payload);
+    }, 200);
+
+    return () => {
+      if (remoteSaveTimer.current) clearTimeout(remoteSaveTimer.current);
+    };
+  }, [sections, requirements, materials, links, workspaceMeta, remoteEnabled]);
+
+  // リロード・タブ閉じの直前に DB へフラッシュ（debounce 待ちの保存を逃さない）。
+  useEffect(() => {
+    if (!remoteEnabled) return;
+
+    const flush = () => {
+      if (remoteSaveTimer.current) {
+        clearTimeout(remoteSaveTimer.current);
+        remoteSaveTimer.current = null;
+      }
+      const payload = latestPayloadRef.current;
+      if (payload) flushRemotePersisted(payload);
+    };
+
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, [remoteEnabled]);
 
   const resetToInitial = useCallback(() => {
     clearPersisted();
+    if (remoteEnabled) void clearRemotePersisted();
     skipNextSave.current = true;
     setSections(initialSections);
     setRequirements(initialRequirements);
     setMaterials(initialMaterials);
     setLinks(initialLinks);
     setWorkspaceMeta(workspace);
+    setActiveId(defaultActiveSectionId(initialSections));
   }, [
     initialSections,
     initialRequirements,
     initialMaterials,
     initialLinks,
     workspace,
+    remoteEnabled,
   ]);
 
   const updateWorkspaceMeta = useCallback((patch: Partial<WorkspaceMeta>) => {
     setWorkspaceMeta((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  const firstSectionId =
-    initialSections.find((s) => s.level === 2)?.id ??
-    initialSections[0]?.id ??
-    null;
-  const [activeId, setActiveId] = useState<string | null>(firstSectionId);
+  // 復元後に activeId が存在しない節を指している場合は補正する。
+  useEffect(() => {
+    if (activeId && sections.some((s) => s.id === activeId)) return;
+    const next = defaultActiveSectionId(sections);
+    if (next !== activeId) setActiveId(next);
+  }, [sections, activeId]);
 
   const active = sections.find((s) => s.id === activeId) ?? null;
 
