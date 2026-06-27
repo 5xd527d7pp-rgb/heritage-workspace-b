@@ -9,11 +9,6 @@ import {
   type LinkSuggestion,
   type Requirement,
 } from "@/lib/schema";
-import {
-  generateDraft,
-  checkRequirements,
-  suggestLinks,
-} from "@/lib/ai/heritage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,16 +65,31 @@ function AiDialogBody({
   onToggleRequirement,
   onApproveSuggestion,
 }: AiActionDialogProps & { mode: AiMode; context: AiContext }) {
-  const [stage, setStage] = useState<"confirm" | "result">("confirm");
+  const [stage, setStage] = useState<"confirm" | "loading" | "result">("confirm");
   const [draft, setDraft] = useState<DraftResult | null>(null);
   const [checks, setChecks] = useState<CheckResultItem[] | null>(null);
   const [suggestions, setSuggestions] = useState<LinkSuggestion[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const run = () => {
-    if (mode === "draft") setDraft(generateDraft(context));
-    else if (mode === "check") setChecks(checkRequirements(context));
-    else setSuggestions(suggestLinks(context, allRequirements));
-    setStage("result");
+  const run = async () => {
+    setStage("loading");
+    setError(null);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode, context, allRequirements }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (mode === "draft") setDraft(data as DraftResult);
+      else if (mode === "check") setChecks(data as CheckResultItem[]);
+      else setSuggestions(data as LinkSuggestion[]);
+      setStage("result");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "不明なエラー");
+      setStage("confirm");
+    }
   };
 
   return (
@@ -131,10 +141,22 @@ function AiDialogBody({
               </ul>
             )}
           </ContextBlock>
+          {error && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              エラー: {error}
+            </p>
+          )}
           <DialogFooter>
             <DialogClose render={<Button variant="outline">キャンセル</Button>} />
             <Button onClick={run}>この内容で実行</Button>
           </DialogFooter>
+        </div>
+      )}
+
+      {stage === "loading" && (
+        <div className="flex flex-col items-center gap-3 py-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+          <p className="text-sm text-muted-foreground">AI が処理中です…</p>
         </div>
       )}
 

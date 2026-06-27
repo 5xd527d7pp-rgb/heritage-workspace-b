@@ -36,9 +36,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# output artifacts (generated files, not source)
-/output
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts

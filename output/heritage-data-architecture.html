@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta property="og:title" content="heritage-workspace-b データ保存設計">
+  <meta property="og:description" content="文化財計画執筆ツールの「何を・どこに保存するか」を、DB・Blob・Markdown・hybrid版まで一枚で整理。">
+  <meta property="og:type" content="article">
+  <title>heritage-workspace-b データ保存設計</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FFFFFF'/><rect x='8' y='8' width='84' height='84' rx='14' fill='none' stroke='%233B82F6' stroke-width='4'/><circle cx='32' cy='40' r='10' fill='%233B82F6' opacity='0.8'/><circle cx='68' cy='40' r='10' fill='%2360A5FA' opacity='0.8'/><rect x='25' y='62' width='50' height='6' rx='3' fill='%2394A3B8' opacity='0.6'/><rect x='30' y='74' width='40' height='6' rx='3' fill='%2394A3B8' opacity='0.3'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ads: {
+              bg: '#FFFFFF',
+              surface: '#F8FAFC',
+              hover: '#F1F5F9',
+              border: '#E2E8F0',
+              accent: '#3B82F6',
+              'accent-light': '#2563EB',
+              text: '#1E293B',
+              muted: '#64748B',
+              dim: '#94A3B8',
+              positive: '#10B981',
+              negative: '#EF4444',
+              warning: '#F59E0B',
+            }
+          },
+          fontFamily: {
+            sans: ['"Noto Sans JP"', '"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', '"Yu Gothic UI"', '"Meiryo"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { border-top: none !important; }
+      .rounded-xl { break-inside: avoid; }
+      .md\:flex-row { flex-direction: row !important; }
+      .md\:hidden { display: none !important; }
+      .hidden.md\:block { display: block !important; }
+      .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+      .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+      .md\:mb-20 { margin-bottom: 5rem !important; }
+      .md\:py-16 { padding-top: 4rem !important; padding-bottom: 4rem !important; }
+      .bg-clip-text.text-transparent {
+        -webkit-background-clip: initial !important;
+        background-clip: initial !important;
+        color: #2563EB !important;
+        -webkit-text-fill-color: #2563EB !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-ads-bg text-slate-600 antialiased leading-relaxed border-t-4 border-ads-accent">
+  <div class="no-print max-w-3xl mx-auto px-5 pt-2 flex justify-end">
+    <button onclick="window.print()" class="flex items-center gap-1.5 text-xs text-ads-dim hover:text-ads-accent transition-colors cursor-pointer">
+      <i data-lucide="download" class="w-3.5 h-3.5"></i>
+      PDF
+    </button>
+  </div>
+  <main class="max-w-3xl mx-auto px-5 py-10 md:py-16">
+<!-- CONTENT_START -->
+
+<!-- HERO -->
+<div class="text-center mb-8 md:mb-10">
+  <div class="inline-flex items-center gap-2 bg-ads-accent/10 text-ads-accent-light px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+    <i data-lucide="database" class="w-4 h-4"></i>
+    開発ツール
+  </div>
+  <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-6">
+    heritage-workspace-b<br>
+    <span class="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">データ保存設計</span>
+  </h1>
+  <p class="text-lg text-ads-muted max-w-xl mx-auto leading-relaxed">
+    第7回講義の課題「何を・どこに保存するか」を<br>
+    文化財計画執筆ツール向けに整理した設計図。<br>
+    ひとことで言うと ──
+  </p>
+</div>
+
+<!-- ONE-PAGE SUMMARY -->
+<div class="bg-ads-surface border border-ads-border rounded-2xl p-6 md:p-10 mb-6">
+  <div class="text-center mb-8">
+    <p class="text-xl md:text-2xl font-black text-slate-900 mb-2">
+      文字は <span class="text-emerald-600">DB</span>、画像は <span class="text-amber-600">Blob</span>、正本は <span class="text-blue-600">DB</span>
+    </p>
+    <p class="text-sm text-ads-muted">
+      フル編集アプリ + 複数計画 + 後から hybrid 版へ一方向エクスポート
+    </p>
+  </div>
+
+  <!-- Core architecture flow -->
+  <div class="flex flex-col md:flex-row items-stretch justify-center gap-3 md:gap-2 mb-8">
+    <div class="flex-1 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-center">
+      <div class="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="monitor-smartphone" class="w-6 h-6 text-blue-600"></i>
+      </div>
+      <div class="font-bold text-blue-700 text-sm mb-1">ブラウザ</div>
+      <div class="text-[11px] text-ads-muted">本人が編集<br>他者は閲覧</div>
+    </div>
+    <div class="flex items-center justify-center md:w-8 py-1">
+      <i data-lucide="arrow-right" class="w-5 h-5 text-ads-dim hidden md:block"></i>
+      <i data-lucide="arrow-down" class="w-5 h-5 text-ads-dim md:hidden"></i>
+    </div>
+    <div class="flex-1 bg-emerald-500/10 border-2 border-emerald-500/30 rounded-xl p-4 text-center">
+      <div class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="database" class="w-6 h-6 text-emerald-600"></i>
+      </div>
+      <div class="font-bold text-emerald-700 text-sm mb-1">Neon (Postgres)</div>
+      <div class="text-[11px] text-ads-muted">文字データの正本<br>plans を根に planId</div>
+    </div>
+    <div class="flex items-center justify-center md:w-8 py-1">
+      <i data-lucide="arrow-right" class="w-5 h-5 text-ads-dim hidden md:block"></i>
+      <i data-lucide="arrow-down" class="w-5 h-5 text-ads-dim md:hidden"></i>
+    </div>
+    <div class="flex-1 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
+      <div class="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="image" class="w-6 h-6 text-amber-600"></i>
+      </div>
+      <div class="font-bold text-amber-700 text-sm mb-1">Vercel Blob</div>
+      <div class="text-[11px] text-ads-muted">写真・図の実体<br>DB は URL のみ</div>
+    </div>
+    <div class="flex items-center justify-center md:w-8 py-1">
+      <i data-lucide="arrow-right" class="w-5 h-5 text-ads-dim hidden md:block"></i>
+      <i data-lucide="arrow-down" class="w-5 h-5 text-ads-dim md:hidden"></i>
+    </div>
+    <div class="flex-1 bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 text-center">
+      <div class="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
+      </div>
+      <div class="font-bold text-purple-700 text-sm mb-1">hybrid 版</div>
+      <div class="text-[11px] text-ads-muted">DB → Markdown<br>一方向エクスポート</div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap justify-center gap-2">
+    <div class="flex items-center gap-1.5 bg-white border border-ads-border rounded-full px-3.5 py-1.5 text-xs text-slate-700">
+      <i data-lucide="laptop" class="w-3.5 h-3.5 text-blue-500"></i>
+      会社PC
+    </div>
+    <div class="flex items-center gap-1.5 bg-white border border-ads-border rounded-full px-3.5 py-1.5 text-xs text-slate-700">
+      <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-500"></i>
+      自宅PC
+    </div>
+    <div class="flex items-center gap-1.5 bg-white border border-ads-border rounded-full px-3.5 py-1.5 text-xs text-slate-700">
+      <i data-lucide="smartphone" class="w-3.5 h-3.5 text-purple-500"></i>
+      スマホ
+    </div>
+    <div class="flex items-center gap-1.5 bg-white border border-ads-border rounded-full px-3.5 py-1.5 text-xs text-slate-700">
+      <i data-lucide="eye" class="w-3.5 h-3.5 text-ads-muted"></i>
+      他者は閲覧のみ
+    </div>
+  </div>
+</div>
+
+<p class="text-center text-ads-muted mb-16 md:mb-20">
+  ここから、決まったこと・保存の分け方・DB構造・hybrid 準備を順に解説します。
+</p>
+
+<!-- SECTION 1: 決まった方針 -->
+<section class="mb-16 md:mb-20">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 flex-shrink-0">
+      <i data-lucide="check-square" class="w-5 h-5 text-emerald-600"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">grill-me で決まった方針</h2>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div class="bg-ads-surface border border-ads-border rounded-xl p-5">
+      <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+        <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
+        誰が使うか
+      </h3>
+      <ul class="space-y-2 text-sm text-ads-muted">
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>編集は<strong class="text-slate-800">本人1人</strong>（複数端末から）</li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>成果（本文・Word）は<strong class="text-slate-800">他者が閲覧</strong></li>
+        <li class="flex items-start gap-2"><i data-lucide="x" class="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0"></i>共同編集はしない</li>
+      </ul>
+    </div>
+    <div class="bg-ads-surface border border-ads-border rounded-xl p-5">
+      <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+        <i data-lucide="layout" class="w-4 h-4 text-emerald-600"></i>
+        アプリの形
+      </h3>
+      <ul class="space-y-2 text-sm text-ads-muted">
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i><strong class="text-slate-800">フル編集アプリ</strong>として仕上げる</li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>講座課題として<strong class="text-slate-800">DB を使う</strong></li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i><strong class="text-slate-800">複数計画</strong>を最初から対応</li>
+      </ul>
+    </div>
+    <div class="bg-ads-surface border border-ads-border rounded-xl p-5">
+      <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+        <i data-lucide="shield" class="w-4 h-4 text-purple-600"></i>
+        正本 (SSoT)
+      </h3>
+      <ul class="space-y-2 text-sm text-ads-muted">
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i><strong class="text-slate-800">DB が正本</strong></li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>hybrid 版は DB → Git/Markdown の<strong class="text-slate-800">一方向</strong></li>
+        <li class="flex items-start gap-2"><i data-lucide="x" class="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0"></i>双方向同期はやらない</li>
+      </ul>
+    </div>
+    <div class="bg-ads-surface border border-ads-border rounded-xl p-5">
+      <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+        <i data-lucide="lock" class="w-4 h-4 text-amber-600"></i>
+        アクセス制御
+      </h3>
+      <ul class="space-y-2 text-sm text-ads-muted">
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>編集は<strong class="text-slate-800">ログイン必須</strong></li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>閲覧は公開（計画ごとに ON/OFF）</li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0"></i>Vercel 全体保護は使わない</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: 何をどこに -->
+<section class="mb-16 md:mb-20">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-cyan-500/10 flex-shrink-0">
+      <i data-lucide="map" class="w-5 h-5 text-cyan-600"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">何を・どこに保存するか</h2>
+  </div>
+
+  <p class="mb-6 leading-relaxed">
+    第7回講義の核心は「<strong class="text-slate-900">文字データとバイナリは分ける</strong>」こと。文化財計画ツールでも同じです。
+  </p>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-6">
+      <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4">
+        <i data-lucide="database" class="w-5 h-5 text-emerald-600"></i>
+      </div>
+      <h3 class="font-bold text-emerald-700 mb-2">DB（Neon Postgres）</h3>
+      <p class="text-sm text-ads-muted leading-relaxed mb-3">表形式で整理整頓。複数端末から同じデータにアクセスするための<strong class="text-slate-800">正本</strong>。</p>
+      <ul class="text-xs text-ads-muted space-y-1.5">
+        <li>・計画メタ（表紙・公開設定）</li>
+        <li>・章節・本文（Markdown）</li>
+        <li>・要件・素材・紐付け</li>
+        <li>・画像メタ（番号・出典・URL）</li>
+      </ul>
+    </div>
+    <div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-6">
+      <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center mb-4">
+        <i data-lucide="hard-drive" class="w-5 h-5 text-amber-600"></i>
+      </div>
+      <h3 class="font-bold text-amber-700 mb-2">Blob（Vercel Blob）</h3>
+      <p class="text-sm text-ads-muted leading-relaxed mb-3">写真・図の<strong class="text-slate-800">実体ファイル</strong>。DB に入れると重く、Git も向かない。</p>
+      <ul class="text-xs text-ads-muted space-y-1.5">
+        <li>・分布図・地図・現地写真</li>
+        <li>・DB には blobUrl だけ</li>
+        <li>・HTML の img は「住所」</li>
+      </ul>
+    </div>
+    <div class="bg-purple-500/5 border border-purple-500/20 rounded-xl p-6">
+      <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+        <i data-lucide="git-branch" class="w-5 h-5 text-purple-600"></i>
+      </div>
+      <h3 class="font-bold text-purple-700 mb-2">Git / Markdown（hybrid）</h3>
+      <p class="text-sm text-ads-muted leading-relaxed mb-3">後から追加する<strong class="text-slate-800">ミラー</strong>。AI（Cursor）が本文に密着するためのエクスポート先。</p>
+      <ul class="text-xs text-ads-muted space-y-1.5">
+        <li>・DB → .md 一方向</li>
+        <li>・双方向同期はしない</li>
+        <li>・正本は常に DB</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 誤解訂正 -->
+  <div class="bg-red-500/5 border border-red-500/20 rounded-xl overflow-hidden mb-8">
+    <div class="flex items-center gap-3 px-6 py-4 bg-red-500/5 border-b border-red-500/10">
+      <i data-lucide="x-circle" class="w-5 h-5 text-red-600"></i>
+      <h3 class="font-bold text-red-700 text-sm">よくある誤解：「リストも写真も全部 DB に入れる？」</h3>
+    </div>
+    <div class="px-6 py-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <p class="font-bold text-emerald-700 mb-2 flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i> DB に入れる</p>
+          <ul class="space-y-1.5 text-ads-muted">
+            <li><strong class="text-slate-800">リスト</strong> → 本文 Markdown の `-` 行</li>
+            <li><strong class="text-slate-800">画像の参照</strong> → images テーブルの URL</li>
+            <li><strong class="text-slate-800">図表番号・出典</strong> → images テーブルのメタ</li>
+          </ul>
+        </div>
+        <div>
+          <p class="font-bold text-red-700 mb-2 flex items-center gap-1.5"><i data-lucide="x" class="w-4 h-4"></i> DB に入れない</p>
+          <ul class="space-y-1.5 text-ads-muted">
+            <li><strong class="text-slate-800">JPEG/PNG の実体</strong> → Blob</li>
+            <li>理由：重い・差分管理不可・Git 容量限界</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: 本文と画像 -->
+<section class="mb-16 md:mb-20">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/10 flex-shrink-0">
+      <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">本文 = Markdown、画像 = 参照</h2>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <!-- Editor mock -->
+    <div class="rounded-xl overflow-hidden border border-slate-700/50">
+      <div class="flex items-center gap-3 bg-slate-800 px-4 py-2.5">
+        <div class="flex gap-1.5">
+          <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+          <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+        </div>
+        <div class="text-xs text-slate-400">heritage-workspace-b — 第2章 第1節</div>
+      </div>
+      <div class="bg-white p-4 text-xs font-mono leading-relaxed text-slate-700">
+        <div class="text-slate-400 mb-2"># 2-1 地域の概要</div>
+        <div class="mb-2">本市域は...</div>
+        <div class="mb-2">- 文化財の種類：建造物、記念物</div>
+        <div class="mb-2">- 指定件数：国指定3件</div>
+        <div class="text-emerald-600 mb-2">![図1 分布図](blob://fig-001.png)</div>
+        <div class="text-slate-400">出典：○○市文化財台帳</div>
+      </div>
+    </div>
+
+    <!-- Split storage -->
+    <div class="space-y-3">
+      <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
+          <span class="font-bold text-emerald-700 text-sm">sections.body（TEXT）</span>
+        </div>
+        <p class="text-xs text-ads-muted">Markdown 文字列そのまま保存。リストは `-`、画像は `![](url)` で参照。</p>
+      </div>
+      <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="table" class="w-4 h-4 text-emerald-600"></i>
+          <span class="font-bold text-emerald-700 text-sm">images テーブル（フルメタ）</span>
+        </div>
+        <div class="text-xs text-ads-muted space-y-1">
+          <div>kind: 写真 / 図 / 地図</div>
+          <div>number: 図1, 写真2（自動採番）</div>
+          <div>caption, source, blobUrl</div>
+        </div>
+      </div>
+      <div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="hard-drive" class="w-4 h-4 text-amber-600"></i>
+          <span class="font-bold text-amber-700 text-sm">Vercel Blob</span>
+        </div>
+        <p class="text-xs text-ads-muted">fig-001.png の実体ファイル。DB には URL だけ。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-ads-accent/5 border border-ads-accent/20 rounded-xl p-5">
+    <div class="flex items-start gap-3">
+      <i data-lucide="lightbulb" class="w-5 h-5 text-ads-accent-light mt-0.5 flex-shrink-0"></i>
+      <div>
+        <p class="font-bold text-ads-accent-light mb-1">なぜ Markdown？</p>
+        <p class="text-sm text-ads-muted leading-relaxed">
+          AI に文章を書かせるなら Markdown が最も軽い（第7回講義）。JSON/SQL は AI に重い。将来 hybrid 版で Git にエクスポートするときも、.md ファイルにそのまま落とせる。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: DB構造 -->
+<section class="mb-16 md:mb-20">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-500/10 flex-shrink-0">
+      <i data-lucide="network" class="w-5 h-5 text-purple-600"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">DB 構造 — plans を根に planId で紐付け</h2>
+  </div>
+
+  <p class="mb-6 leading-relaxed">
+    複数計画対応のため、<strong class="text-slate-900">plans テーブルが親</strong>。他のテーブルはすべて <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700">planId</code> で紐付く（講義の candidates ↔ interviews と同じ構造）。
+  </p>
+
+  <div class="bg-ads-surface border border-ads-border rounded-xl p-6 md:p-8 mb-8">
+    <div class="flex flex-col items-center">
+      <!-- plans root -->
+      <div class="w-full max-w-xs bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-4 text-center mb-4">
+        <div class="font-bold text-purple-700 mb-1">plans（親）</div>
+        <div class="text-[11px] text-ads-muted">name / status / date / publisher / isPublic</div>
+      </div>
+      <div class="w-px h-6 bg-ads-border"></div>
+      <!-- children -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3 w-full">
+        <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 text-center">
+          <div class="font-bold text-emerald-700 text-xs mb-1">sections</div>
+          <div class="text-[10px] text-ads-muted">章節・body(MD)<br>status・pageRef</div>
+        </div>
+        <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 text-center">
+          <div class="font-bold text-emerald-700 text-xs mb-1">requirements</div>
+          <div class="text-[10px] text-ads-muted">記載要件<br>satisfied</div>
+        </div>
+        <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 text-center">
+          <div class="font-bold text-emerald-700 text-xs mb-1">materials</div>
+          <div class="text-[10px] text-ads-muted">素材データ<br>台帳・資料</div>
+        </div>
+        <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 text-center">
+          <div class="font-bold text-emerald-700 text-xs mb-1">links</div>
+          <div class="text-[10px] text-ads-muted">素材↔節↔要件<br>紐付け</div>
+        </div>
+        <div class="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 text-center">
+          <div class="font-bold text-amber-700 text-xs mb-1">images</div>
+          <div class="text-[10px] text-ads-muted">写真・図メタ<br>blobUrl</div>
+        </div>
+        <div class="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 text-center flex items-center justify-center">
+          <div class="text-[10px] text-ads-muted">すべて <strong class="text-blue-700">planId</strong> で親に紐付く</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-sm text-ads-muted">
+    現状の <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">schema.ts</code>（zod）がデータ契約の SSoT。この型を DB 行にも Markdown エクスポートにも使い回す。
+  </p>
+</section>
+
+<!-- SECTION 5: アクセス -->
+<section class="mb-16 md:mb-20">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-500/10 flex-shrink-0">
+      <i data-lucide="shield-check" class="w-5 h-5 text-amber-600"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">公開とアクセス — 計画ごとに ON/OFF</h2>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div class="bg-blue-500/5 border border-blue-500/20 rounded-xl p-6">
+      <div class="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-700 px-3 py-1 rounded-full text-xs font-bold mb-4">
+        <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+        編集（本人のみ）
+      </div>
+      <ul class="space-y-2 text-sm text-ads-muted">
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-blue-600 mt-0.5"></i>ログイン必須（単一ユーザー/パスワード）</li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-blue-600 mt-0.5"></i>本文・要件・素材・画像を編集</li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-blue-600 mt-0.5"></i>会社・自宅・スマホから同じ DB</li>
+      </ul>
+    </div>
+    <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-6">
+      <div class="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold mb-4">
+        <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+        閲覧（他者）
+      </div>
+      <ul class="space-y-2 text-sm text-ads-muted">
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5"></i>公開 ON の計画だけ見える</li>
+        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5"></i>Word 出力・本文閲覧</li>
+        <li class="flex items-start gap-2"><i data-lucide="x" class="w-4 h-4 text-red-500 mt-0.5"></i>編集・削除は不可</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: hybrid準備 -->
+<section class="mb-16 md:mb-20">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-500/10 flex-shrink-0">
+      <i data-lucide="git-branch" class="w-5 h-5 text-indigo-600"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">hybrid 版への準備（今から効く布石）</h2>
+  </div>
+
+  <div class="bg-ads-surface border border-ads-border rounded-xl p-6 md:p-8 mb-8">
+    <h3 class="text-lg font-bold text-slate-900 text-center mb-6">DB版を作りながら hybrid を見据える3つの布石</h3>
+    <div class="space-y-4">
+      <div class="flex gap-4 items-start">
+        <div class="w-8 h-8 rounded-full bg-blue-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">1</div>
+        <div>
+          <p class="font-bold text-slate-900 mb-1">ストレージ層をインターフェース化</p>
+          <p class="text-sm text-ads-muted"><code class="text-xs bg-slate-100 px-1 rounded">storage.ts</code> の「読む/書く/消す」を契約に。DB 実装と Git/ファイル実装を差し替え可能に。</p>
+        </div>
+      </div>
+      <div class="flex gap-4 items-start">
+        <div class="w-8 h-8 rounded-full bg-emerald-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">2</div>
+        <div>
+          <p class="font-bold text-slate-900 mb-1">schema.ts (zod) を唯一のデータ契約に</p>
+          <p class="text-sm text-ads-muted">DB 行も JSON も Markdown も同じ型に直列化・復元。型が揺れない。</p>
+        </div>
+      </div>
+      <div class="flex gap-4 items-start">
+        <div class="w-8 h-8 rounded-full bg-purple-500 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">3</div>
+        <div>
+          <p class="font-bold text-slate-900 mb-1">本文=Markdown / 画像=参照URL</p>
+          <p class="text-sm text-ads-muted">DB の TEXT でも .md ファイルでも等価。後からエクスポータを足すだけ。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export flow -->
+  <div class="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-2 mb-6">
+    <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-5 py-3 text-center">
+      <div class="font-bold text-emerald-700 text-sm">DB（正本）</div>
+    </div>
+    <div class="flex flex-col items-center">
+      <span class="text-[10px] text-purple-600 font-medium">一方向エクスポート</span>
+      <i data-lucide="arrow-right" class="w-5 h-5 text-purple-600 hidden md:block"></i>
+      <i data-lucide="arrow-down" class="w-5 h-5 text-purple-600 md:hidden"></i>
+    </div>
+    <div class="bg-purple-500/10 border border-purple-500/20 rounded-xl px-5 py-3 text-center">
+      <div class="font-bold text-purple-700 text-sm">Git / Markdown</div>
+      <div class="text-[10px] text-ads-muted">Cursor + AI が読む</div>
+    </div>
+    <div class="flex items-center justify-center md:w-8">
+      <i data-lucide="x" class="w-5 h-5 text-red-400"></i>
+    </div>
+    <div class="bg-red-500/5 border border-red-500/20 rounded-xl px-5 py-3 text-center opacity-60">
+      <div class="font-bold text-red-600 text-sm line-through">双方向同期</div>
+      <div class="text-[10px] text-ads-muted">やらない</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: 未決 -->
+<section class="mb-16 md:mb-20">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-500/10 flex-shrink-0">
+      <i data-lucide="help-circle" class="w-5 h-5 text-amber-600"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">まだ決めていないこと</h2>
+  </div>
+
+  <div class="space-y-3">
+    <div class="flex items-start gap-3 bg-ads-surface border border-ads-border rounded-xl p-4">
+      <div class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <span class="text-xs font-bold text-amber-700">?</span>
+      </div>
+      <div>
+        <p class="font-bold text-slate-900 text-sm mb-1">図表番号の採番単位</p>
+        <p class="text-xs text-ads-muted">計画通し / 章ごと / 種別ごと（図1・写真1）— 次の grill で決める</p>
+      </div>
+    </div>
+    <div class="flex items-start gap-3 bg-ads-surface border border-ads-border rounded-xl p-4">
+      <div class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <span class="text-xs font-bold text-amber-700">?</span>
+      </div>
+      <div>
+        <p class="font-bold text-slate-900 text-sm mb-1">認証の実装手段</p>
+        <p class="text-xs text-ads-muted">env パスワード / NextAuth 等 — 次の grill で決める</p>
+      </div>
+    </div>
+    <div class="flex items-start gap-3 bg-ads-surface border border-ads-border rounded-xl p-4">
+      <div class="w-6 h-6 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <span class="text-xs font-bold text-amber-700">?</span>
+      </div>
+      <div>
+        <p class="font-bold text-slate-900 text-sm mb-1">localStorage → DB の移行段取り</p>
+        <p class="text-xs text-ads-muted">既存データのインポート方法 — 実装フェーズで決める</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SUMMARY -->
+<section>
+  <div class="flex items-center gap-3 mb-8">
+    <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-ads-accent/10 flex-shrink-0">
+      <i data-lucide="flag" class="w-5 h-5 text-ads-accent-light"></i>
+    </div>
+    <h2 class="text-xl md:text-2xl font-bold text-slate-900">まとめ — 覚えておく3点</h2>
+  </div>
+
+  <div class="space-y-4 mb-10">
+    <div class="bg-ads-surface border border-ads-border rounded-xl p-6 border-l-4 border-l-emerald-500">
+      <div class="flex items-start gap-4">
+        <div class="text-2xl font-black text-emerald-500 leading-none flex-shrink-0 mt-1">01</div>
+        <div>
+          <h3 class="font-bold text-slate-900 mb-2">文字は DB、画像は Blob</h3>
+          <p class="text-sm text-ads-muted leading-relaxed">リストは本文 Markdown の一部。写真・図の実体は Blob、DB は URL とメタだけ。</p>
+        </div>
+      </div>
+    </div>
+    <div class="bg-ads-surface border border-ads-border rounded-xl p-6 border-l-4 border-l-blue-500">
+      <div class="flex items-start gap-4">
+        <div class="text-2xl font-black text-blue-500 leading-none flex-shrink-0 mt-1">02</div>
+        <div>
+          <h3 class="font-bold text-slate-900 mb-2">DB が正本、plans を根に複数計画</h3>
+          <p class="text-sm text-ads-muted leading-relaxed">全テーブルが planId で紐付く。編集はログイン必須、閲覧は計画ごとに公開 ON/OFF。</p>
+        </div>
+      </div>
+    </div>
+    <div class="bg-ads-surface border border-ads-border rounded-xl p-6 border-l-4 border-l-purple-500">
+      <div class="flex items-start gap-4">
+        <div class="text-2xl font-black text-purple-500 leading-none flex-shrink-0 mt-1">03</div>
+        <div>
+          <h3 class="font-bold text-slate-900 mb-2">hybrid 版は後から、一方向エクスポート</h3>
+          <p class="text-sm text-ads-muted leading-relaxed">Markdown + schema.ts + ストレージ契約を今から守れば、DB→Git エクスポータを後付けできる。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center bg-gradient-to-b from-ads-accent/5 to-transparent border border-ads-accent/10 rounded-xl p-8">
+    <p class="text-lg font-bold text-slate-900 mb-3">次は grill を続けて、未決3点を詰める</p>
+    <p class="text-sm text-ads-muted max-w-lg mx-auto leading-relaxed">
+      図表番号の採番 → 認証手段 → 移行段取りの順がおすすめ。決まったら Neon + Blob 接続の実装に入れる。
+    </p>
+  </div>
+</section>
+
+<!-- CONTENT_END -->
+  </main>
+  <footer class="max-w-3xl mx-auto px-5 pb-10 pt-6 border-t border-ads-border/30">
+    <p class="text-xs text-ads-dim text-center">AI-Driven School の図解ツールで作成</p>
+  </footer>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

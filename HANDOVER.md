@@ -87,11 +87,15 @@ npm run dev
 - レビュー版 HTML 出力
 - 提出用 Word 出力（`.doc`）
 - localStorage 永続化
+- **AI 実 API 接続**（`src/app/api/ai/route.ts`）
+  - Anthropic Claude 呼び出し（下書き / 要件チェック / 素材紐付け候補）
+  - `ANTHROPIC_API_KEY` 未設定時はスタブで代替（フォールバック）
+  - ダイアログに非同期ローディング表示を追加
 
-### スタブ / 未着手
-- AI 下書き・要件チェック・素材紐付け候補（`src/lib/ai/heritage.ts`）
-- サーバー側 API / DB 連携
-- 素材データのインポート
+### 未着手
+- localStorage → DB（Neon / Postgres）移行（第7回月次課題）
+- 素材データのインポート機能
+- Vercel デプロイ（`npm run build` は通過済み）
 - ユーザー認証
 
 ---
@@ -102,15 +106,23 @@ npm run dev
 - 提出用 Word のレイアウト・フォント統一
 - 表紙フィールドの編集機能
 - 目次ページの自動生成
+- **AI 実 API 接続**（`src/app/api/ai/route.ts` 新規・`AiActionDialog.tsx` 非同期化）
+- `.env.local.example` 追加
 
 ---
 
 ## 次にやるなら
 
-1. AI スタブを実 API に接続（`src/lib/ai/heritage.ts` の入出力契約は維持）
-2. localStorage → DB（Neon / Postgres 等）への移行
-3. 提出先に合わせた Word / HTML 書式調整
-4. 素材データのインポート機能
+1. **Vercel デプロイ**（第6回の課題）
+   - `npm run build` は通過済み
+   - GitHub push → Vercel ダッシュボードから Import → Deploy
+   - `ANTHROPIC_API_KEY` を Vercel 環境変数に設定する
+2. **localStorage → DB（Neon / Postgres）移行**（第7回の月次課題）
+   - Vercel ダッシュボード > Storage > Neon を追加
+   - `DATABASE_URL` 環境変数を `.env.local` に追加
+   - `src/lib/persistence/storage.ts` の責務を DB API ルートに置き換え
+3. **素材データのインポート機能**（CSV / JSON アップロード）
+4. **提出先に合わせた Word / HTML 書式調整**
 
 ---
 
@@ -118,7 +130,8 @@ npm run dev
 
 - **道B は自由度が高い** → 規律（命名・コンポーネント分割）は自分で決める必要あり
 - **データの正本は `schema.ts`** → JSON や UI を変えるときはここから
-- **AI はスタブ** → 本番連携時も `AiContext` / `DraftResult` 等の型を守る
+- **AI は実 API 接続済み** → `ANTHROPIC_API_KEY` を `.env.local` に設定してから起動する
+  - 未設定時はスタブ（`src/lib/ai/heritage.ts`）で代替動作する
 - 未コミット: `output/heritage-data-architecture.html`（図解アウトプット）
 
 ---
